@@ -182,6 +182,8 @@
   <div class="sep"></div>
   <button onclick="loadSQLite()">📂 Открыть SQLite</button>
   <button onclick="saveSQLite()">💾 Сохранить SQLite</button>
+  <button onclick="saveToFile()">📋 Сохранить JSON</button>
+  <button onclick="document.getElementById('file-input').click()">📋 Открыть JSON</button>
   <input type="file" id="file-input" accept=".json" onchange="loadFromFile(event)">
   <input type="file" id="sqlite-input" accept=".sqlite,.db" onchange="loadSQLiteFile(event)" style="display:none">
   <span id="saved-msg">✓ Сохранено</span>
