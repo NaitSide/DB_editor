@@ -682,10 +682,23 @@ async function loadSQLiteFile(e) {
     (fks[0]?.values || []).forEach(r => { fkMap[r[3]] = r[2]; }); // col → refTable
 
     const fields = (cols[0]?.values || []).map(c => {
-      const name = c[1], isPk = c[5] > 0, isFk = name in fkMap;
+      const name = c[1], isPk = c[5] > 0;
+      let isFk = name in fkMap;
+      let refTable = fkMap[name] || '';
+      // Фолбэк: если нет REFERENCES в схеме, определяем FK по имени поля
+      if (!isFk && !isPk && name !== 'id' && name.includes('_id')) {
+        isFk = true;
+        const base = name.replace(/_id$/, ''); // address_id → address
+        const allTables = result[0].values.map(r => r[0]);
+        const guessed = allTables.find(t => t === base)
+          || allTables.find(t => t.startsWith(base))
+          || allTables.find(t => base.startsWith(t))
+          || base;
+        refTable = guessed;
+      }
       return {
         name,
-        desc: isPk ? 'ID' : isFk ? `FK → ${fkMap[name]}` : c[2] || 'TEXT',
+        desc: isPk ? 'ID' : isFk ? `FK → ${refTable}` : c[2] || 'TEXT',
         type: isPk ? 'pk' : isFk ? 'fk' : ''
       };
     });
@@ -759,7 +772,14 @@ async function saveSQLite() {
     const cols = t.fields.map(f => {
       const cname = f.name.replace(/[^\w\u0400-\u04FF]/g, '_');
       if (f.type === 'pk') return `  ${cname} INTEGER PRIMARY KEY AUTOINCREMENT`;
-      if (f.type === 'fk') return `  ${cname} INTEGER`;
+      if (f.type === 'fk') {
+        // Извлекаем имя referenced таблицы из desc ("FK → tablename")
+        const refMatch = f.desc && f.desc.match(/FK\s*[→>]\s*(\S+)/);
+        const refTable = refMatch ? refMatch[1] : '';
+        return refTable
+          ? `  ${cname} INTEGER REFERENCES "${refTable}"(id)`
+          : `  ${cname} INTEGER`;
+      }
       return `  ${cname} TEXT`;
     }).join(',\n');
     const sql = `CREATE TABLE IF NOT EXISTS "${tname}" (\n${cols}\n);`;
