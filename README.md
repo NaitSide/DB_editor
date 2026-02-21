@@ -4,6 +4,7 @@
 
 ![DB Editor Preview](screenshot.png)
 
+
 [![Download](https://img.shields.io/badge/Download-DB_Editor-e94560?style=for-the-badge)](https://github.com/NaitSide/DB_editor/releases/download/DB_Editor_v1.0/DB_editor.html)
 
 ## ✨ Возможности
@@ -46,4 +47,27 @@ Vanilla JS · HTML · CSS · [sql.js](https://github.com/sql-js/sql.js) · [html
 
 ---
 
-> Telegram: [@something_on_the_smart](https://t.me/something_on_the_smart)
+## 👨‍💻 Автор
+
+**NaitSide** · Telegram: [@something_on_the_smart](https://t.me/something_on_the_smart)
+
+---
+
+## 🔗 Ссылки
+
+- [GitHub NaitSide](https://github.com/NaitSide)
+
+---
+
+## 📄 Лицензия
+
+Скрипт распространяется "как есть" без гарантий.  
+Используйте на свой страх и риск.
+
+---
+
+## 💝 Поддержка
+
+Если скрипт помог — поставь ⭐ на GitHub!
+
+Нашёл баг или есть предложение? Открой Issue.
