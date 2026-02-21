@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Схема Базы Данных</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a2e; font-family: 'Segoe UI', sans-serif; overflow: hidden; user-select: none; }
+
+  #toolbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 38px;
+    background: #0f3460; display: flex; align-items: center; padding: 0 12px;
+    gap: 8px; z-index: 1000; font-size: 11px; color: #cdd6f4;
+  }
+  .title { color: #e94560; font-weight: bold; font-size: 12px; margin-right: 4px; }
+  .sep { width: 1px; background: #334; height: 20px; margin: 0 4px; }
+  button {
+    background: #16213e; border: 1px solid #334; color: #cdd6f4;
+    padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 10px;
+  }
+  button:hover { background: #e94560; color: #fff; border-color: #e94560; }
+  button.active { background: #e94560; color: #fff; border-color: #e94560; }
+  #saved-msg { color: #a6e3a1; font-size: 9px; opacity: 0; transition: opacity 0.5s; }
+  .tg-link {
+    color: #a6e3a1; font-size: 10px; text-decoration: none; margin-left: auto;
+  }
+  .tg-link:hover { color: #e94560; }
+
+  #canvas { position: absolute; top: 38px; left: 0; right: 0; bottom: 0; }
+
+  svg#svg-layer {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 1;
+  }
+
+  /* Заголовок по центру */
+  #center-title {
+    position: fixed; top: 46px; left: 50%; transform: translateX(-50%);
+    color: #6a6a8a; font-size: 20px; font-weight: 600; letter-spacing: 2px;
+    cursor: pointer; z-index: 5; padding: 4px 14px; border-radius: 6px;
+    transition: color 0.2s; white-space: nowrap;
+  }
+  #center-title:hover { color: #cdd6f4; }
+  #center-title input {
+    background: #16213e; border: 1px solid #e94560; color: #cdd6f4;
+    font-size: 20px; font-weight: 600; padding: 2px 10px; border-radius: 4px;
+    outline: none; letter-spacing: 2px; width: 360px; text-align: center;
+  }
+
+  /* Легенда */
+  #legend {
+    position: fixed; top: 50px; right: 16px;
+    background: #16213e; border: 1px solid #0f3460;
+    border-radius: 6px; padding: 8px 12px; z-index: 5;
+    font-size: 10px; line-height: 1.8;
+  }
+  #legend div { color: #a0a0a0; }
+  #legend .pk { color: #f9e2af; }
+  #legend .fk { color: #a6e3a1; }
+
+  .table {
+    position: absolute; background: #16213e;
+    border: 1px solid #0f3460; border-radius: 8px;
+    width: 220px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    z-index: 10; cursor: grab;
+  }
+  .table-header {
+    background: #0f3460; color: #e94560; font-weight: bold; font-size: 11px;
+    padding: 5px 8px; border-radius: 7px 7px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .del-table { color: #585b70; cursor: pointer; font-size: 12px; padding: 0 2px; }
+  .del-table:hover { color: #e94560; }
+
+  .field {
+    padding: 3px 8px; font-size: 9px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid #0f3460; position: relative; gap: 4px;
+  }
+  .field:last-child { border-bottom: none; }
+  .field-name { color: #cdd6f4; flex: 1; }
+  .field-type { color: #585b70; font-size: 8px; text-align: right; flex-shrink: 0; }
+  .field.pk .field-name { color: #f9e2af; }
+  .field.fk .field-name { color: #a6e3a1; }
+  .del-field { color: #2a2a4a; cursor: pointer; font-size: 10px; flex-shrink: 0; padding: 0 2px; }
+  .field:hover .del-field { color: #585b70; }
+  .del-field:hover { color: #e94560 !important; }
+
+  .dot {
+    position: absolute; width: 9px; height: 9px; border-radius: 50%;
+    background: #e94560; top: 50%; transform: translateY(-50%);
+    cursor: crosshair; opacity: 0; transition: opacity 0.1s; z-index: 20;
+    border: 1px solid #1a1a2e;
+  }
+  .dot-left { left: -5px; }
+  .dot-right { right: -5px; }
+  .table:hover .dot { opacity: 1; }
+
+  .add-field-row {
+    padding: 3px 8px; display: flex; gap: 4px; border-top: 1px dashed #0f3460;
+  }
+  .add-field-row input {
+    background: #0d1b2a; border: 1px solid #0f3460; color: #cdd6f4;
+    padding: 2px 4px; font-size: 8px; border-radius: 3px; flex: 1; min-width: 0;
+  }
+  .add-field-row input:focus { outline: none; border-color: #e94560; }
+  .add-field-row select {
+    background: #0d1b2a; border: 1px solid #0f3460; color: #cdd6f4;
+    padding: 2px; font-size: 8px; border-radius: 3px;
+  }
+  .add-field-row button {
+    background: #0f3460; border: none; color: #e94560;
+    padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px;
+  }
+  .add-field-row button:hover { background: #e94560; color: #fff; }
+
+  #modal {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
+  }
+  #modal.show { display: flex; }
+  #modal-box {
+    background: #16213e; border: 1px solid #0f3460; border-radius: 8px;
+    padding: 20px; width: 300px;
+  }
+  #modal-box h3 { color: #e94560; margin-bottom: 12px; font-size: 13px; }
+  #modal-box input {
+    width: 100%; background: #0d1b2a; border: 1px solid #0f3460; color: #cdd6f4;
+    padding: 6px 8px; font-size: 11px; border-radius: 4px; margin-bottom: 10px;
+  }
+  #modal-box input:focus { outline: none; border-color: #e94560; }
+  #modal-box .btns { display: flex; gap: 8px; justify-content: flex-end; }
+  #modal-box .btns button { background: #0f3460; border: none; color: #cdd6f4; padding: 5px 14px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+  #modal-box .btns button.primary { background: #e94560; color: #fff; }
+
+  #hint {
+    position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+    background: rgba(15,52,96,0.9); color: #a0a0a0; font-size: 9px;
+    padding: 3px 12px; border-radius: 10px; pointer-events: none; z-index: 999;
+  }
+  #file-input { display: none; }
+
+  .field.dragging-row {
+    opacity: 0.4;
+  }
+  .field.drop-target-above::before {
+    content: '';
+    display: block;
+    height: 2px;
+    background: #e94560;
+    margin: -1px -8px 1px -8px;
+  }
+  .field.drop-target-below::after {
+    content: '';
+    display: block;
+    height: 2px;
+    background: #e94560;
+    margin: 1px -8px -1px -8px;
+  }
+  .field-drag-handle {
+    color: #334; cursor: grab; font-size: 10px; flex-shrink: 0;
+    padding: 0 3px; display: none;
+  }
+  .field:hover .field-drag-handle { color: #585b70; }
+  body.sort-mode .field-drag-handle { display: block; }
+  body.sort-mode .dot { display: none !important; }
+  body.sort-mode .field { cursor: default; }
+  body.sort-mode .field-drag-handle { cursor: grab; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <a class="title" href="https://github.com/NaitSide/DB_editor" target="_blank" style="text-decoration:none">⚙ DB Editor</a>
+  <div class="sep"></div>
+  <button id="btn-move" class="active" onclick="setMode('move')">✋ Двигать</button>
+  <button id="btn-arrow" onclick="setMode('arrow')">→ Стрелка</button>
+  <button id="btn-sort" onclick="setMode('sort')">↕ Строки</button>
+  <div class="sep"></div>
+  <button onclick="showAddTable()">＋ Таблица</button>
+  <button onclick="clearArrows()">✕ Стрелки</button>
+  <div class="sep"></div>
+  <button onclick="loadSQLite()">📂 Открыть SQLite</button>
+  <button onclick="saveSQLite()">💾 Сохранить SQLite</button>
+  <input type="file" id="file-input" accept=".json" onchange="loadFromFile(event)">
+  <input type="file" id="sqlite-input" accept=".sqlite,.db" onchange="loadSQLiteFile(event)" style="display:none">
+  <span id="saved-msg">✓ Сохранено</span>
+  <a class="tg-link" href="https://t.me/something_on_the_smart" target="_blank">@something_on_the_smart</a>
+</div>
+
+<!-- Заголовок по центру -->
+<div id="center-title">
+  <span id="title-text">Схема Базы Данных</span>
+</div>
+
+<!-- Легенда -->
+<div id="legend">
+  <div class="pk">🔑 PK — Primary Key</div>
+  <div class="fk">🔗 FK — Foreign Key</div>
+  <div style="color:#585b70; font-size:9px; margin-top:4px; border-top:1px solid #0f3460; padding-top:4px;">only 🔗 FK → 🔑 PK</div>
+</div>
+
+<div id="canvas">
+  <svg id="svg-layer">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#e94560"/>
+      </marker>
+    </defs>
+  </svg>
+</div>
+
+<div id="modal">
+  <div id="modal-box">
+    <h3>Новая таблица</h3>
+    <input id="modal-name" placeholder="Название (напр. users)" />
+    <div class="btns">
+      <button onclick="hideModal()">Отмена</button>
+      <button class="primary" onclick="addTableFromModal()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div id="hint">✋ Двигать | → Стрелка: кликни точку → точку | ПКМ на стрелке — удалить | ESC — отмена</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
+<script>
+const DEFAULT_TABLES = [
+  { id: 't-sample1', title: '🍬 sweets', x: 200, y: 150, fields: [
+    { name: 'id', desc: 'ID', type: 'pk' },
+    { name: 'category_id', desc: 'FK → categories', type: 'fk' },
+    { name: 'chocolate', desc: 'шоколад', type: '' },
+    { name: 'bubble_gum', desc: 'жвачка', type: '' },
+    { name: 'candy', desc: 'конфета', type: '' },
+    { name: 'price', desc: 'цена', type: '' },
+  ]},
+  { id: 't-sample2', title: '📦 categories', x: 520, y: 150, fields: [
+    { name: 'id', desc: 'ID', type: 'pk' },
+    { name: 'name', desc: 'название', type: '' },
+    { name: 'description', desc: 'описание', type: '' },
+  ]},
+];
+
+let tables = [];
+let arrows = [];
+let mode = 'move';
+let drawingArrow = null;
+let tempLine = null;
+let tableIdCounter = 100;
+
+// ─── Заголовок — клик для редактирования ─────────────────────────────────────
+
+document.getElementById('center-title').addEventListener('click', function(e) {
+  if (e.target.tagName === 'INPUT') return;
+  const span = document.getElementById('title-text');
+  const current = span.textContent;
+  const input = document.createElement('input');
+  input.value = current;
+  this.replaceChild(input, span);
+  input.focus(); input.select();
+  function finish() {
+    const newTitle = input.value.trim() || current;
+    const newSpan = document.createElement('span');
+    newSpan.id = 'title-text';
+    newSpan.textContent = newTitle;
+    document.getElementById('center-title').replaceChild(newSpan, input);
+  }
+  input.addEventListener('blur', finish);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') finish(); e.stopPropagation(); });
+  input.addEventListener('mousedown', e => e.stopPropagation());
+});
+
+// ─── Координаты dot ───────────────────────────────────────────────────────────
+
+function getDotCoords(tableId, fieldIdx, side) {
+  const tableEl = document.getElementById(tableId);
+  if (!tableEl) return null;
+  const fields = tableEl.querySelectorAll('.field');
+  if (!fields[fieldIdx]) return null;
+  const dot = fields[fieldIdx].querySelector('.dot-' + side);
+  if (!dot) return null;
+  const r = dot.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+// ─── Рендер ───────────────────────────────────────────────────────────────────
+
+function init() {
+  tables = JSON.parse(JSON.stringify(DEFAULT_TABLES));
+  arrows = [
+    { fromTable: 't-sample1', fromFi: 1, fromSide: 'right', toTable: 't-sample2', toFi: 0, toSide: 'left' }
+  ];
+  renderAll();
+}
+
+function renderAll() {
+  const canvas = document.getElementById('canvas');
+  canvas.querySelectorAll('.table').forEach(el => el.remove());
+  tables.forEach(t => renderTable(t));
+  setTimeout(redrawArrows, 150);
+}
+
+function renderTable(t) {
+  const canvas = document.getElementById('canvas');
+  const div = document.createElement('div');
+  div.className = 'table';
+  div.id = t.id;
+  div.style.left = t.x + 'px';
+  div.style.top  = t.y + 'px';
+
+  const header = document.createElement('div');
+  header.className = 'table-header';
+  header.innerHTML = `<span>${t.title}</span><span class="del-table">✕</span>`;
+  header.querySelector('.del-table').addEventListener('mousedown', e => {
+    e.stopPropagation();
+    if (confirm(`Удалить "${t.title}"?`)) {
+      tables = tables.filter(x => x.id !== t.id);
+      arrows = arrows.filter(a => a.fromTable !== t.id && a.toTable !== t.id);
+      renderAll();
+    }
+  });
+  div.appendChild(header);
+
+  t.fields.forEach((f, fi) => {
+    const row = document.createElement('div');
+    row.className = 'field' + (f.type ? ' ' + f.type : '');
+    const icon = f.type === 'pk' ? '🔑 ' : f.type === 'fk' ? '🔗 ' : '';
+    row.innerHTML = `
+      <span class="field-drag-handle" data-table="${t.id}" data-fi="${fi}">⠿</span>
+      <span class="field-name">${icon}${f.name}</span>
+      <span class="field-type">${f.desc}</span>
+      <span class="del-field">✕</span>
+      <div class="dot dot-left" data-table="${t.id}" data-fi="${fi}" data-side="left"></div>
+      <div class="dot dot-right" data-table="${t.id}" data-fi="${fi}" data-side="right"></div>
+    `;
+    // Drag строк
+    const handle = row.querySelector('.field-drag-handle');
+    handle.addEventListener('mousedown', e => {
+      if (mode !== 'sort') return;
+      e.stopPropagation();
+      startRowDrag(e, t, fi);
+    });
+    row.querySelector('.del-field').addEventListener('mousedown', e => {
+      e.stopPropagation();
+      t.fields.splice(fi, 1);
+      arrows = arrows.filter(a => !(a.fromTable === t.id && a.fromFi === fi) && !(a.toTable === t.id && a.toFi === fi));
+      renderAll();
+    });
+    div.appendChild(row);
+  });
+
+  // Строка добавления поля
+  const addRow = document.createElement('div');
+  addRow.className = 'add-field-row';
+  addRow.innerHTML = `
+    <input placeholder="поле" class="inp-name" />
+    <input placeholder="описание" class="inp-desc" style="width:70px" />
+    <select class="inp-type">
+      <option value="">поле</option>
+      <option value="pk">PK</option>
+      <option value="fk">FK</option>
+    </select>
+    <button class="inp-add">+</button>
+  `;
+  addRow.querySelector('.inp-add').addEventListener('mousedown', e => {
+    e.stopPropagation();
+    const name = addRow.querySelector('.inp-name').value.trim();
+    const desc = addRow.querySelector('.inp-desc').value.trim();
+    const type = addRow.querySelector('.inp-type').value;
+    if (!name) return;
+    t.fields.push({ name, desc, type });
+    renderAll();
+  });
+  addRow.querySelector('.inp-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addRow.querySelector('.inp-add').click();
+    e.stopPropagation();
+  });
+  addRow.querySelectorAll('input, select').forEach(el => el.addEventListener('mousedown', e => e.stopPropagation()));
+  div.appendChild(addRow);
+
+  makeDraggable(div, t);
+
+  div.querySelectorAll('.dot').forEach(dot => {
+    dot.addEventListener('mousedown', e => {
+      if (mode !== 'arrow') return;
+      e.stopPropagation();
+      const tableId = dot.dataset.table;
+      const fi = parseInt(dot.dataset.fi);
+      const side = dot.dataset.side;
+      if (!drawingArrow) {
+        drawingArrow = { tableId, fi, side };
+        tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        tempLine.setAttribute('stroke', '#e94560');
+        tempLine.setAttribute('stroke-width', '1.5');
+        tempLine.setAttribute('fill', 'none');
+        tempLine.setAttribute('stroke-dasharray', '4,3');
+        tempLine.setAttribute('opacity', '0.5');
+        document.getElementById('svg-layer').appendChild(tempLine);
+      } else {
+        arrows.push({
+          fromTable: drawingArrow.tableId, fromFi: drawingArrow.fi, fromSide: drawingArrow.side,
+          toTable: tableId, toFi: fi, toSide: side
+        });
+        drawingArrow = null;
+        if (tempLine) { tempLine.remove(); tempLine = null; }
+        redrawArrows();
+      }
+    });
+  });
+
+  canvas.appendChild(div);
+}
+
+// ─── Drag ─────────────────────────────────────────────────────────────────────
+
+function makeDraggable(el, t) {
+  let dragging = false, sx, sy, ox, oy;
+  el.addEventListener('mousedown', e => {
+    if (mode !== 'move') return;
+    if (e.target.classList.contains('dot')) return;
+    if (['del-table','del-field','inp-add'].some(c => e.target.classList.contains(c))) return;
+    if (['INPUT','SELECT','BUTTON'].includes(e.target.tagName)) return;
+    dragging = true;
+    sx = e.clientX; sy = e.clientY; ox = t.x; oy = t.y;
+    el.style.zIndex = 100;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    t.x = ox + e.clientX - sx;
+    t.y = oy + e.clientY - sy;
+    el.style.left = t.x + 'px';
+    el.style.top  = t.y + 'px';
+    redrawArrows();
+  });
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging = false; el.style.zIndex = 10; }
+  });
+}
+
+// ─── Стрелки ──────────────────────────────────────────────────────────────────
+
+function orthoPath(x1, y1, x2, y2) {
+  const mx = (x1 + x2) / 2;
+  return `M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2},${y2}`;
+}
+
+function redrawArrows() {
+  const svg = document.getElementById('svg-layer');
+  svg.querySelectorAll('.arrow-line').forEach(el => el.remove());
+  arrows.forEach((a, i) => {
+    const from = getDotCoords(a.fromTable, a.fromFi, a.fromSide);
+    const to   = getDotCoords(a.toTable,   a.toFi,   a.toSide);
+    if (!from || !to) return;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('class', 'arrow-line');
+    path.setAttribute('d', orthoPath(from.x, from.y, to.x, to.y));
+    path.setAttribute('stroke', '#e94560');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('opacity', '0.85');
+    path.setAttribute('marker-end', 'url(#arr)');
+    path.style.pointerEvents = 'stroke';
+    path.style.cursor = 'pointer';
+    path.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      arrows.splice(i, 1);
+      redrawArrows();
+    });
+    svg.appendChild(path);
+  });
+}
+
+document.addEventListener('mousemove', e => {
+  if (!drawingArrow || !tempLine) return;
+  const from = getDotCoords(drawingArrow.tableId, drawingArrow.fi, drawingArrow.side);
+  if (!from) return;
+  tempLine.setAttribute('d', orthoPath(from.x, from.y, e.clientX, e.clientY));
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    drawingArrow = null;
+    if (tempLine) { tempLine.remove(); tempLine = null; }
+  }
+});
+
+// ─── Режимы ───────────────────────────────────────────────────────────────────
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-move').classList.toggle('active', m === 'move');
+  document.getElementById('btn-arrow').classList.toggle('active', m === 'arrow');
+  document.getElementById('btn-sort').classList.toggle('active', m === 'sort');
+  document.body.classList.toggle('sort-mode', m === 'sort');
+}
+
+// ─── Перетаскивание строк ─────────────────────────────────────────────────────
+
+let rowDrag = null; // { table, fromFi, ghost }
+
+function startRowDrag(e, t, fi) {
+  // Создаём призрак
+  const ghost = document.createElement('div');
+  ghost.style.cssText = `
+    position:fixed; pointer-events:none; z-index:9999;
+    background:#16213e; border:1px solid #e94560; border-radius:4px;
+    padding:3px 10px; font-size:9px; color:#cdd6f4;
+    opacity:0.9; white-space:nowrap;
+  `;
+  ghost.textContent = (t.fields[fi].type === 'pk' ? '🔑 ' : t.fields[fi].type === 'fk' ? '🔗 ' : '') + t.fields[fi].name;
+  document.body.appendChild(ghost);
+
+  rowDrag = { table: t, fromFi: fi, ghost };
+  moveGhost(e);
+}
+
+function moveGhost(e) {
+  if (!rowDrag) return;
+  rowDrag.ghost.style.left = (e.clientX + 12) + 'px';
+  rowDrag.ghost.style.top  = (e.clientY - 10) + 'px';
+
+  // Подсветка цели
+  document.querySelectorAll('.field').forEach(el => {
+    el.classList.remove('drop-target-above', 'drop-target-below');
+  });
+  const target = getDropTarget(e);
+  if (target) {
+    target.el.classList.add(target.pos === 'above' ? 'drop-target-above' : 'drop-target-below');
+  }
+}
+
+function getDropTarget(e) {
+  // Ищем ближайшую строку под курсором
+  const els = document.elementsFromPoint(e.clientX, e.clientY);
+  for (const el of els) {
+    if (el.classList.contains('field') && !el.classList.contains('add-field-row')) {
+      const r = el.getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      return { el, pos: e.clientY < mid ? 'above' : 'below' };
+    }
+  }
+  return null;
+}
+
+function endRowDrag(e) {
+  if (!rowDrag) return;
+  rowDrag.ghost.remove();
+
+  const target = getDropTarget(e);
+  document.querySelectorAll('.field').forEach(el => {
+    el.classList.remove('drop-target-above', 'drop-target-below');
+  });
+
+  if (target) {
+    const targetTableId = target.el.querySelector('.dot-left')?.dataset.table
+      || target.el.querySelector('.field-drag-handle')?.dataset.table;
+    const targetFi = parseInt(target.el.querySelector('.dot-left')?.dataset.fi
+      ?? target.el.querySelector('.field-drag-handle')?.dataset.fi);
+
+    if (targetTableId !== undefined && !isNaN(targetFi)) {
+      const targetTable = tables.find(t => t.id === targetTableId);
+      if (targetTable && !(targetTable === rowDrag.table && targetFi === rowDrag.fromFi)) {
+        // Перемещаем поле
+        const [moved] = rowDrag.table.fields.splice(rowDrag.fromFi, 1);
+        // Обновляем стрелки
+        arrows = arrows.filter(a =>
+          !(a.fromTable === rowDrag.table.id && a.fromFi === rowDrag.fromFi) &&
+          !(a.toTable === rowDrag.table.id && a.toFi === rowDrag.fromFi)
+        );
+
+        let insertAt = targetFi + (target.pos === 'below' ? 1 : 0);
+        if (targetTable === rowDrag.table && targetFi > rowDrag.fromFi) insertAt--;
+        insertAt = Math.max(0, Math.min(insertAt, targetTable.fields.length));
+        targetTable.fields.splice(insertAt, 0, moved);
+        renderAll();
+      }
+    }
+  }
+
+  rowDrag = null;
+}
+
+document.addEventListener('mousemove', e => { if (rowDrag) moveGhost(e); });
+document.addEventListener('mouseup',   e => { if (rowDrag) endRowDrag(e); });
+
+function clearArrows() {
+  if (confirm('Удалить все стрелки?')) { arrows = []; redrawArrows(); }
+}
+
+// ─── Добавление таблицы ───────────────────────────────────────────────────────
+
+function showAddTable() {
+  document.getElementById('modal').classList.add('show');
+  document.getElementById('modal-name').value = '';
+  setTimeout(() => document.getElementById('modal-name').focus(), 50);
+}
+function hideModal() { document.getElementById('modal').classList.remove('show'); }
+function addTableFromModal() {
+  const name = document.getElementById('modal-name').value.trim();
+  if (!name) return;
+  const id = 't-' + (++tableIdCounter);
+  tables.push({
+    id, title: name, x: 420, y: 320,
+    fields: [{ name: 'id', desc: 'ID', type: 'pk' }]
+  });
+  hideModal();
+  renderAll();
+}
+document.getElementById('modal-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTableFromModal();
+  if (e.key === 'Escape') hideModal();
+});
+
+// ─── JSON ─────────────────────────────────────────────────────────────────────
+
+function saveToFile() {
+  const title = document.getElementById('title-text').textContent;
+  const data = JSON.stringify({ title, tables, arrows }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'db_schema.json';
+  a.click();
+  const msg = document.getElementById('saved-msg');
+  msg.style.opacity = 1;
+  setTimeout(() => msg.style.opacity = 0, 2000);
+}
+
+function loadFromFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      tables = data.tables || [];
+      arrows = data.arrows || [];
+      if (data.title) {
+        document.getElementById('title-text').textContent = data.title;
+      }
+      renderAll();
+    } catch { alert('Ошибка чтения файла'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ─── SQLite ───────────────────────────────────────────────────────────────────
+
+function loadSQLite() {
+  document.getElementById('sqlite-input').click();
+}
+
+async function loadSQLiteFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const SQL = await initSqlJs({
+    locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}`
+  });
+  const buf = await file.arrayBuffer();
+  const db = new SQL.Database(new Uint8Array(buf));
+
+  const result = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+  if (!result.length) { alert('Таблицы не найдены'); return; }
+
+  const newTables = [];
+  // Собираем FK связи: { fromTable, fromField, toTable }
+  const fkLinks = [];
+  
+  // Раскладываем таблицы в 2 ряда по 4
+  const cols_per_row = 4;
+  const col_w = 260, row_h = 420;
+
+  result[0].values.forEach(([tname], idx) => {
+    const cols = db.exec(`PRAGMA table_info("${tname}")`);
+    const fks  = db.exec(`PRAGMA foreign_key_list("${tname}")`);
+    const fkMap = {};
+    (fks[0]?.values || []).forEach(r => { fkMap[r[3]] = r[2]; }); // col → refTable
+
+    const fields = (cols[0]?.values || []).map(c => {
+      const name = c[1], isPk = c[5] > 0, isFk = name in fkMap;
+      return {
+        name,
+        desc: isPk ? 'ID' : isFk ? `FK → ${fkMap[name]}` : c[2] || 'TEXT',
+        type: isPk ? 'pk' : isFk ? 'fk' : ''
+      };
+    });
+
+    // Запоминаем FK для стрелок
+    Object.entries(fkMap).forEach(([fromField, toTable]) => {
+      fkLinks.push({ fromTable: tname, fromField, toTable });
+    });
+
+    const col = idx % cols_per_row;
+    const row = Math.floor(idx / cols_per_row);
+
+    newTables.push({
+      id: 't-sql-' + (++tableIdCounter),
+      title: tname,
+      x: 40 + col * col_w,
+      y: 60 + row * row_h,
+      fields
+    });
+  });
+
+  tables = newTables;
+  arrows = [];
+  renderAll();
+
+  // Строим стрелки ПОСЛЕ рендера — ждём 2 кадра + 100мс для надёжности
+  setTimeout(() => {
+    fkLinks.forEach(({ fromTable, fromField, toTable }) => {
+      const fromT = tables.find(t => t.title === fromTable);
+      const toT   = tables.find(t => t.title === toTable);
+      if (!fromT || !toT) return;
+
+      const fromFi = fromT.fields.findIndex(f => f.name === fromField);
+      const toFi   = toT.fields.findIndex(f => f.type === 'pk');
+      if (fromFi < 0 || toFi < 0) return;
+
+      // Определяем сторону: если toTable левее — стрелка идёт влево
+      const fromEl = document.getElementById(fromT.id);
+      const toEl   = document.getElementById(toT.id);
+      if (!fromEl || !toEl) return;
+
+      const fromX = parseInt(fromEl.style.left);
+      const toX   = parseInt(toEl.style.left);
+      const fromSide = toX > fromX ? 'right' : 'left';
+      const toSide   = toX > fromX ? 'left'  : 'right';
+
+      arrows.push({ fromTable: fromT.id, fromFi, fromSide, toTable: toT.id, toFi, toSide });
+    });
+    redrawArrows();
+  }, 150);
+
+  e.target.value = '';
+}
+
+async function saveSQLite() {
+  const SQL = await initSqlJs({
+    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${file}`
+  });
+  const db = new SQL.Database();
+
+  // Создаём таблицы в порядке: сначала без FK, потом с FK
+  const ordered = [...tables].sort((a, b) => {
+    const aHasFk = a.fields.some(f => f.type === 'fk');
+    const bHasFk = b.fields.some(f => f.type === 'fk');
+    return aHasFk - bHasFk;
+  });
+
+  ordered.forEach(t => {
+    // Чистое имя таблицы — убираем эмодзи и пробелы
+    const tname = t.title.replace(/[^\w\u0400-\u04FF]/g, ' ').trim().replace(/\s+/g, '_').toLowerCase();
+    const cols = t.fields.map(f => {
+      const cname = f.name.replace(/[^\w\u0400-\u04FF]/g, '_');
+      if (f.type === 'pk') return `  ${cname} INTEGER PRIMARY KEY AUTOINCREMENT`;
+      if (f.type === 'fk') return `  ${cname} INTEGER`;
+      return `  ${cname} TEXT`;
+    }).join(',\n');
+    const sql = `CREATE TABLE IF NOT EXISTS "${tname}" (\n${cols}\n);`;
+    try { db.run(sql); } catch(err) { console.warn('Ошибка создания таблицы:', tname, err); }
+  });
+
+  const blob = new Blob([db.export()], { type: 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'schema.sqlite';
+  a.click();
+}
+
+// ─── Скрин ────────────────────────────────────────────────────────────────────
+
+
+// ─── Старт ────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
