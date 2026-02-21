@@ -5,7 +5,7 @@
 ![DB Editor Preview](screenshot.png)
 
 
-[![Download](https://img.shields.io/badge/Download-DB_Editor-e94560?style=for-the-badge)](https://github.com/NaitSide/DB_editor/releases/download/DB_Editor_v1.0/DB_editor.html)
+[![Download](https://img.shields.io/badge/Download-DB_Editor-e94560?style=for-the-badge)](https://github.com/NaitSide/DB_editor/releases/download/DB_Editor_v1.2/DB_editor.html)
 
 ## ✨ Возможности
 
