@@ -2,7 +2,7 @@
 
 Лёгкий визуальный редактор схем баз данных. Один HTML файл — без установки, без зависимостей.
 
-![DB Editor Preview](preview.png)
+![DB Editor Preview](screenshot.png)
 
 ## ✨ Возможности
 
@@ -17,7 +17,7 @@
 
 ## 🚀 Использование
 
-1. Скачай `DB_editor.html`
+1. Скачай `db_schema_final_editor.html`
 2. Открой в браузере
 3. Готово — никакой установки не нужно
 
@@ -34,8 +34,9 @@
 
 ## 💾 Форматы экспорта
 
+- **JSON** — полная схема с позициями таблиц и стрелками
 - **SQLite** — готовый файл базы данных
-
+- **PNG** — скриншот схемы без интерфейса
 
 ## 🛠 Технологии
 
@@ -43,27 +44,4 @@ Vanilla JS · HTML · CSS · [sql.js](https://github.com/sql-js/sql.js) · [html
 
 ---
 
-## 👨‍💻 Автор
-
-**NaitSide** · Telegram: [@something_on_the_smart](https://t.me/something_on_the_smart)
-
----
-
-## 🔗 Ссылки
-
-- [GitHub NaitSide](https://github.com/NaitSide)
-
----
-
-## 📄 Лицензия
-
-Скрипт распространяется "как есть" без гарантий.  
-Используйте на свой страх и риск.
-
----
-
-## 💝 Поддержка
-
-Если скрипт помог — поставь ⭐ на GitHub!
-
-Нашёл баг или есть предложение? Открой Issue.
+> Telegram: [@something_on_the_smart](https://t.me/something_on_the_smart)
